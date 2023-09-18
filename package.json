@@ -9,11 +9,7 @@
   ],
   "funding": "https://github.com/sponsors/aidenybai",
   "license": "MIT",
-  "author": {
-    "name": "Aiden Bai",
-    "email": "hello@aidenybai.com",
-    "url": "https://aidenybai.com"
-  },
+  "author": "Zack Radisic, Aiden Bai",
   "exports": {
     ".": {
       "import": "./dist/index.js",
