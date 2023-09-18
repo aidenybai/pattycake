@@ -1,0 +1,15 @@
+{
+  "extends": "@vercel/style-guide/typescript",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "lib": ["dom", "esnext"],
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "esnext",
+    "noImplicitAny": false
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"],
+  "exclude": ["node_modules", "dist", "*.d.ts"]
+}
