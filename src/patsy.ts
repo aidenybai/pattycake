@@ -44,7 +44,6 @@ const patsyPlugin = (opts: Opts): PluginObj => {
         }
       },
       CallExpression(path) {
-        console.log('HIR transform', hirTransform);
         if (hirTransform === undefined) return;
 
         try {

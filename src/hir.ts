@@ -122,6 +122,13 @@ function isFunction(expr: b.Node): expr is FnExpr {
   return b.isArrowFunctionExpression(expr) || b.isFunctionExpression(expr);
 }
 
+/**
+ *  The AST of a ts-pattern match expression is a nested
+ *  tree of CallExpressions, which is cumbersome and also upside-down for our purposes. This
+ *  functions converts this upside down tree into a flat array in the correct
+ *  order (the first CallExpression represents the initial `match()` call, the
+ *  next represents the first `.with()` call, etc.)
+ **/
 function hirPatternMatchTopDownCallExprs(
   ht: HirTransform,
   expr: b.CallExpression,

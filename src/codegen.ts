@@ -428,6 +428,9 @@ function patternLiteralToExpr(lit: PatternLiteral): b.Expression {
   }
 }
 
+/**
+ * Turn an array of conditionals (expressions that return a boolean) into a single expression chained by multiple '&&'
+ **/
 function concatConditionals(conds: Array<b.Expression>): b.Expression {
   if (conds.length === 1) return conds[0];
 
