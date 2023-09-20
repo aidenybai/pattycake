@@ -62,12 +62,16 @@ out: {
 
 ## Feature parity with ts-pattern
 
-- [ ] Literal patterns
+- [x] [Literal patterns](https://github.com/gvergnaud/ts-pattern#literals)
   - [x] string
   - [x] number
-  - [ ] booleans
-- [x] Object patterns
-- [x] Array/tuples patterns
+  - [x] booleans
+  - [x] bigint
+  - [x] undefined
+  - [x] null
+  - [x] NaN
+- [x] [Object patterns](https://github.com/gvergnaud/ts-pattern#objects)
+- [x] [Array/tuples patterns](https://github.com/gvergnaud/ts-pattern#tuples-arrays)
 - [ ] `.when()`
 - [ ] [Wildcards](https://github.com/gvergnaud/ts-pattern#wildcards) patterns
   - [ ] `P._`

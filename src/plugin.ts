@@ -4,11 +4,9 @@ import pluginSyntaxJsx from '@babel/plugin-syntax-jsx';
 import pluginSyntaxTypescript from '@babel/plugin-syntax-typescript';
 import { declare } from '@babel/helper-plugin-utils';
 import { createUnplugin } from 'unplugin';
-import patsyPlugin, { HirCodegenOpts } from './patsy';
+import patsyPlugin, { Opts } from './patsy';
 
-export interface Options {}
-
-export const unplugin = createUnplugin((options: Options) => {
+export const unplugin = createUnplugin((options: Opts) => {
   return {
     enforce: 'pre',
     name: 'ts-pattern-compiler',
@@ -35,7 +33,7 @@ export const unplugin = createUnplugin((options: Options) => {
   };
 });
 
-export const babelPlugin = declare((api, options: HirCodegenOpts) => {
+export const babelPlugin = declare((api, options: Opts) => {
   api.assertVersion(7);
 
   return patsyPlugin(options);

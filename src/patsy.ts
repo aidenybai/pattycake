@@ -65,7 +65,7 @@ const patsyPlugin = (opts: Opts): PluginObj => {
               ]);
               // parent should be VariableDeclarator
               // parent parent should be VariableDeclaration
-              path.parentPath.parentPath.replaceWithMultiple([
+              path.parentPath.parentPath!.replaceWithMultiple([
                 letDecl,
                 exprOrLabelStmt,
               ]);
@@ -77,11 +77,11 @@ const patsyPlugin = (opts: Opts): PluginObj => {
               ]);
               if (!b.isIdentifier(hc.outVar)) throw new Error('unreachable');
               const assignBack = b.variableDeclaration('let', [
-                b.variableDeclarator(hc.patternOriginalOutVar, hc.outVar),
+                b.variableDeclarator(hc.patternOriginalOutVar!, hc.outVar),
               ]);
               // parent should be VariableDeclarator
               // parent parent should be VariableDeclaration
-              path.parentPath.parentPath.replaceWithMultiple([
+              path.parentPath.parentPath!.replaceWithMultiple([
                 letDecl,
                 exprOrLabelStmt,
                 assignBack,
@@ -91,7 +91,7 @@ const patsyPlugin = (opts: Opts): PluginObj => {
             case 'assignment': {
               // parent should be AssignmentExpression
               // parent parent should be ExpressionStatement
-              path.parentPath.parentPath.replaceWith(exprOrLabelStmt);
+              path.parentPath.parentPath!.replaceWith(exprOrLabelStmt);
               break;
             }
           }

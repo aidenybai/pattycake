@@ -19,15 +19,15 @@ export type HirCodegenOpts = {
 };
 export type HirCodegen = (
   | {
-      kind: 'iife';
-    }
+    kind: 'iife';
+  }
   | {
-      kind: 'block';
-      outVar: b.LVal;
-      outLabel: b.Identifier;
-      patternOriginalOutVar: b.LVal | undefined;
-      type: 'var-decl' | 'pattern-var-decl' | 'assignment';
-    }
+    kind: 'block';
+    outVar: b.LVal;
+    outLabel: b.Identifier;
+    patternOriginalOutVar: b.LVal | undefined;
+    type: 'var-decl' | 'pattern-var-decl' | 'assignment';
+  }
 ) & {
   // monotonically increasing id used for generating unique identifiers
   counter: number;
@@ -280,7 +280,7 @@ function hirCodegenPatternThenFunction(
     throw new Error('unimplemented more than one arg on result function');
   } else if (args.length === 1) {
     block.push(
-      b.variableDeclaration('let', [b.variableDeclarator(args[0], expr)]),
+      b.variableDeclaration('let', [b.variableDeclarator(args[0]!, expr)]),
     );
   }
 
@@ -303,7 +303,7 @@ function hirCodegenRewriteReturns(hc: HirCodegen, body: b.BlockStatement) {
   traverse(body, {
     noScope: true,
     ReturnStatement(path) {
-      const output = hirCodegenOutput(hc, path.node.argument);
+      const output = hirCodegenOutput(hc, path.node.argument || b.identifier('undefined'));
       path.replaceWithMultiple(output);
     },
   });
@@ -375,7 +375,7 @@ function hirCodegenPatternArray(
     // input[i]
     const arrayAccess = b.memberExpression(expr, b.numericLiteral(i), true);
     // Push input[i] === << codegen'd pattern >>
-    conditionals.push(hirCodegenPattern(hc, arrayAccess, arr[i]));
+    conditionals.push(hirCodegenPattern(hc, arrayAccess, arr[i]!));
   }
   return concatConditionals(conditionals);
 }
@@ -425,6 +425,21 @@ function patternLiteralToExpr(lit: PatternLiteral): b.Expression {
     case 'number': {
       return b.numericLiteral(lit.value);
     }
+    case 'boolean': {
+      return b.identifier('undefined')
+    }
+    case 'bigint': {
+      return b.bigIntLiteral(lit.value)
+    }
+    case 'undefined': {
+      return b.identifier('undefined')
+    }
+    case 'null': {
+      return b.nullLiteral()
+    }
+    case 'nan': {
+      return b.identifier('NaN')
+    }
   }
 }
 
@@ -432,14 +447,15 @@ function patternLiteralToExpr(lit: PatternLiteral): b.Expression {
  * Turn an array of conditionals (expressions that return a boolean) into a single expression chained by multiple '&&'
  **/
 function concatConditionals(conds: Array<b.Expression>): b.Expression {
-  if (conds.length === 1) return conds[0];
+  if (conds.length === 0) throw new Error('unreachable: conds array should be non-empty')
+  if (conds.length === 1) return conds[0]!;
 
   let i = conds.length - 1;
-  let out: b.Expression = conds[i];
+  let out: b.Expression = conds[i]!;
   i--;
 
   for (i; i >= 0; i--) {
-    const cond = conds[i];
+    const cond = conds[i]!;
     // out = b.logicalExpression("&&", b.parenthesizedExpression(cond), b.parenthesizedExpression(out))
     out = b.logicalExpression('&&', cond, out);
   }

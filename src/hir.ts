@@ -20,17 +20,25 @@ export type PatternMatchBranch = {
 
 export type Pattern =
   | {
-      type: 'literal';
-      value: PatternLiteral;
-    }
+    type: 'literal';
+    value: PatternLiteral;
+  }
   | { type: 'object'; value: PatternObject }
   | { type: 'array'; value: PatternArray }
   | { type: 'wildcard'; value: unknown }
   | { type: 'matchfn'; value: unknown };
 
+/**
+ * https://github.com/gvergnaud/ts-pattern#literals
+ * */
 export type PatternLiteral =
   | { type: 'string'; value: string }
-  | { type: 'number'; value: number };
+  | { type: 'number'; value: number }
+  | { type: 'boolean'; value: boolean }
+  | { type: 'bigint'; value: string }
+  | { type: 'nan' }
+  | { type: 'null' }
+  | { type: 'undefined' }
 export type PatternObject = Record<string, Pattern>;
 export type PatternArray = Array<Pattern>;
 
@@ -65,7 +73,7 @@ function hirFromCallExprImpl(
   ht: HirTransform,
   callExprs: Array<b.CallExpression>,
 ): PatternMatch | undefined {
-  const expr = callExprs[0].arguments[0];
+  const expr = callExprs[0]!.arguments[0];
   if (!b.isExpression(expr)) return undefined;
 
   let exhaustive: boolean = false;
@@ -73,8 +81,8 @@ function hirFromCallExprImpl(
   const branches: Array<PatternMatchBranch> = [];
 
   for (let i = 1; i < callExprs.length; i++) {
-    const callExpr = callExprs[i];
-    const callee = callExpr.callee;
+    const callExpr = callExprs[i]!;
+    const callee = callExpr!.callee;
     if (!b.isMemberExpression(callee)) {
       throw new Error('unreachable');
     }
@@ -90,7 +98,7 @@ function hirFromCallExprImpl(
         break;
       }
       case 'otherwise': {
-        const arg = callExpr.arguments[0];
+        const arg = callExpr.arguments[0]!;
         if (b.isExpression(arg)) {
           otherwise = arg;
         } else if (b.isSpreadElement(arg)) {
@@ -216,11 +224,11 @@ function transformToPatternMatchBranch(
   //   .otherwise(() => name);
   // ```
   if (args.length === 3) {
-    if (isFunction(args[1])) {
-      const then = args[2];
+    if (isFunction(args[1]!)) {
+      const then = args[2]!;
       if (!b.isExpression(then)) throw new Error(`unsupported: ${then.type}}`);
       if (!b.isExpression(args[0]))
-        throw new Error(`unsupported: ${args[0].type}`);
+        throw new Error(`unsupported: ${args[0]!.type}`);
       return {
         patterns: [transformToPattern(ht, args[0])],
         guard: args[1],
@@ -230,7 +238,7 @@ function transformToPatternMatchBranch(
   }
 
   // Everything else is patterns
-  const then = args[args.length - 1];
+  const then = args[args.length - 1]!;
   if (!b.isExpression(then)) throw new Error(`unsupported: ${then.type}}`);
   return {
     patterns: args.slice(0, args.length - 1).map((arg) => {
@@ -250,6 +258,12 @@ function transformToPattern(ht: HirTransform, expr: b.Expression): Pattern {
 
   if (b.isNumericLiteral(expr))
     return { type: 'literal', value: { type: 'number', value: expr.value } };
+
+  if (b.isBooleanLiteral(expr))
+    return { type: 'literal', value: { type: 'boolean', value: expr.value } };
+
+  if (b.isBigIntLiteral(expr))
+    return { type: 'literal', value: { type: 'bigint', value: expr.value } };
 
   if (b.isArrayExpression(expr)) {
     return {
