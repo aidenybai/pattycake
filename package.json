@@ -1,6 +1,6 @@
 {
-  "name": "ts-pattycake",
-  "version": "0.0.0",
+  "name": "pattycake",
+  "version": "4.0.0",
   "description": "Zero-runtime pattern matching",
   "keywords": [
     "react",
