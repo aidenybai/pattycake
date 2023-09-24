@@ -1,14 +1,12 @@
 # ts-pattycake
 
-Zero-runtime pattern matching for [`ts-pattern`](https://github.com/gvergnaud/ts-pattern).
-
-You get to have your cake (pattern matching), and eat it too.
+An optimizing compiler for [ts-pattern](https://github.com/gvergnaud/ts-pattern) that lets you have your cake (expressive pattern matching), and eat it too (zero runtime overhead).
 
 ## About
 
 `ts-pattern` is a great library that brings the ergonomics of pattern matching from languages like Rust and OCaml to Typescript, but at the cost of being orders of magnitude slower.
 
-`patsy` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by 24-30x.
+`patsy` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by usually ~36-66x.
 
 In essence, `patsy` converts a `ts-pattern` `match()` expression like this:
 
@@ -114,5 +112,5 @@ When possible, `patsy` will try to generate a block of code (like in the example
 
 ## Roadmap
 
-- Support full feature set of ts-pattern
-- Further optimizations
+Right now, the goal is to support the full feature set of ts-pattern, or at least a sufficient amount. After, the ideal is
+that we compile pattern matching expressions into code that would be faster than what you would write by hand.
