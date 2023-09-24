@@ -74,13 +74,16 @@ out: {
 - [x] [Array/tuples patterns](https://github.com/gvergnaud/ts-pattern#tuples-arrays)
 - [ ] `.when()`
 - [ ] [Wildcards](https://github.com/gvergnaud/ts-pattern#wildcards) patterns
-  - [ ] `P._`
-  - [ ] `P.string`
-  - [ ] `P.number`
+  - [x] `P._`
+  - [x] `P.string`
+  - [x] `P.number`
 - [ ] Special matcher functions
   - [ ] `P.not`
   - [ ] `P.when`
-  - [ ] `P.select`
+  - [x] `P.select`
+  - [ ] `P.array`
+  - [ ] `P.map`
+  - [ ] `P.set`
 
 ## Notes
 

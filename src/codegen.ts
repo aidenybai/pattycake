@@ -410,9 +410,11 @@ function hirCodegenPattern(
     case 'boolean': {
       return hirCodegenPatternSimpleTypeof(hc, expr, pattern.type);
     }
+    case 'wildcard': {
+      return b.booleanLiteral(true);
+    }
     case 'nullish':
     case 'symbol':
-    case 'wildcard':
     case '_array':
     case 'set':
     case 'map':
