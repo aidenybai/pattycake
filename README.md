@@ -113,4 +113,4 @@ When possible, `patsy` will try to generate a block of code (like in the example
 ## Roadmap
 
 - Support full feature set of ts-pattern
-- Improve optimizations so that generated code is faster than what you could write by hand.
+- Further optimizations

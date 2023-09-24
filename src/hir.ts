@@ -18,15 +18,39 @@ export type PatternMatchBranch = {
   then: b.Expression;
 };
 
-export type Pattern =
+export type PatternMatchBranchSelections =
   | {
-    type: 'literal';
-    value: PatternLiteral;
-  }
+      type: 'anonymous';
+    }
+  | {
+      type: 'named';
+      captures: Array<PatternSelectNamed>;
+    };
+
+export type Pattern =
+  // Literals
+  | {
+      type: 'literal';
+      value: PatternLiteral;
+    }
   | { type: 'object'; value: PatternObject }
   | { type: 'array'; value: PatternArray }
-  | { type: 'wildcard'; value: unknown }
-  | { type: 'matchfn'; value: unknown };
+  // Simple patterns: P.string, P.number, etc.
+  | { type: 'string' }
+  | { type: 'number' }
+  | { type: 'boolean' }
+  | { type: 'nullish' }
+  | { type: 'bigint' }
+  | { type: 'symbol' }
+  | { type: 'wildcard' } // P._
+  // Custom patterns: P.when
+  | { type: '_array'; value: unknown }
+  | { type: 'set'; subpattern: Pattern }
+  | { type: 'map'; key: Pattern; value: Pattern }
+  // https://github.com/gvergnaud/ts-pattern/tree/main#pwhen-patterns
+  | { type: 'when'; value: unknown }
+  | { type: 'not'; subpattern: Pattern }
+  | { type: 'select'; value: PatternSelect };
 
 /**
  * https://github.com/gvergnaud/ts-pattern#literals
@@ -38,15 +62,27 @@ export type PatternLiteral =
   | { type: 'bigint'; value: string }
   | { type: 'nan' }
   | { type: 'null' }
-  | { type: 'undefined' }
+  | { type: 'undefined' };
 export type PatternObject = Record<string, Pattern>;
 export type PatternArray = Array<Pattern>;
+
+export type PatternSelect = PatternSelectAnonymous | PatternSelectNamed;
+export type PatternSelectAnonymous = {
+  type: 'anonymous';
+  subpattern: Pattern | undefined;
+};
+export type PatternSelectNamed = {
+  type: 'named';
+  name: b.Expression;
+  subpattern: Pattern | undefined;
+};
 
 /**
  * Extra state to be stored when transforming to Hir
  * */
 export type HirTransform = {
-  importName: string;
+  matchIdentifier: string;
+  patternIdentifier: string | undefined;
 };
 
 export function hirFromCallExpr(
@@ -144,7 +180,7 @@ function hirPatternMatchTopDownCallExprs(
   i: number,
 ) {
   if (!b.isExpression(expr.callee)) return;
-  if (b.isIdentifier(expr.callee) && expr.callee.name == ht.importName) {
+  if (b.isIdentifier(expr.callee) && expr.callee.name == ht.matchIdentifier) {
     buf[0] = expr;
     return;
   }
@@ -177,7 +213,7 @@ function hirHasPatternMatchRootImpl(
   depth: number,
 ): number {
   if (!b.isExpression(expr.callee)) return 0;
-  if (b.isIdentifier(expr.callee) && expr.callee.name == ht.importName)
+  if (b.isIdentifier(expr.callee) && expr.callee.name == ht.matchIdentifier)
     return depth;
 
   if (b.isMemberExpression(expr.callee)) {
@@ -230,7 +266,7 @@ function transformToPatternMatchBranch(
       if (!b.isExpression(args[0]))
         throw new Error(`unsupported: ${args[0]!.type}`);
       return {
-        patterns: [transformToPattern(ht, args[0])],
+        patterns: [transformExprToPattern(ht, args[0])],
         guard: args[1],
         then,
       };
@@ -243,14 +279,14 @@ function transformToPatternMatchBranch(
   return {
     patterns: args.slice(0, args.length - 1).map((arg) => {
       if (!b.isExpression(arg)) throw new Error('unimplemented');
-      return transformToPattern(ht, arg);
+      return transformExprToPattern(ht, arg);
     }),
     guard: undefined,
     then,
   };
 }
 
-function transformToPattern(ht: HirTransform, expr: b.Expression): Pattern {
+function transformExprToPattern(ht: HirTransform, expr: b.Expression): Pattern {
   if (b.isObjectExpression(expr)) return transformToPatternObjExpr(ht, expr);
 
   if (b.isStringLiteral(expr))
@@ -271,13 +307,130 @@ function transformToPattern(ht: HirTransform, expr: b.Expression): Pattern {
       value: expr.elements.map((el) => {
         if (!b.isExpression(el))
           throw new Error(`unimplemented type: ${el?.type || 'null'}`);
-        return transformToPattern(ht, el);
+        return transformExprToPattern(ht, el);
       }),
     };
   }
 
+  if (
+    b.isMemberExpression(expr) &&
+    b.isIdentifier(expr.object) &&
+    expr.object.name === ht.patternIdentifier &&
+    b.isIdentifier(expr.property)
+  ) {
+    return transformToSimpleTsPattern(ht, expr.property);
+  }
+
+  if (
+    b.isCallExpression(expr) &&
+    b.isMemberExpression(expr.callee) &&
+    b.isIdentifier(expr.callee.object) &&
+    expr.callee.object.name == ht.patternIdentifier &&
+    b.isIdentifier(expr.callee.property)
+  ) {
+    return transformToComplexTsPattern(
+      ht,
+      expr.callee.property,
+      expr.arguments,
+    );
+  }
+
   // TODO: fallback to runtime check
   throw new Error(`unimplemented ${expr.type}`);
+}
+
+function transformToComplexTsPattern(
+  ht: HirTransform,
+  functionName: b.Identifier,
+  args: b.CallExpression['arguments'],
+): Pattern {
+  switch (functionName.name) {
+    case 'select': {
+      const selection = transformToSelectPattern(ht, args);
+      return {
+        type: 'select',
+        value: selection,
+      };
+    }
+    case '_array':
+    case 'set':
+    case 'map':
+    case 'when':
+    case 'not':
+    default: {
+      throw new Error(
+        `unimplemented pattern function: '${ht.patternIdentifier}.${functionName.name}'`,
+      );
+    }
+  }
+}
+
+function transformToSelectPattern(
+  ht: HirTransform,
+  args: b.CallExpression['arguments'],
+): PatternSelect {
+  if (args.length === 0)
+    return {
+      type: 'anonymous',
+      subpattern: undefined,
+    };
+
+  if (!b.isExpression(args[0]!))
+    throw new Error('Only expressions are supported for `P.select()`');
+
+  if (args.length === 1) {
+    if (b.isStringLiteral(args[0]!))
+      return {
+        type: 'named',
+        name: args[0],
+        subpattern: undefined,
+      };
+
+    return {
+      type: 'anonymous',
+      subpattern: transformExprToPattern(ht, args[0]!),
+    };
+  }
+
+  if (!b.isExpression(args[1]!))
+    throw new Error('Only expressions are supported for `P.select()`');
+
+  return {
+    type: 'named',
+    name: args[0]!,
+    subpattern: transformExprToPattern(ht, args[1]!),
+  };
+}
+
+/**
+ * These are simple patterns from ts-pattern:
+ * P.number, P.string, etc.
+ **/
+function transformToSimpleTsPattern(
+  ht: HirTransform,
+  expr: b.Identifier,
+): Pattern {
+  switch (expr.name) {
+    case 'string':
+      return { type: 'string' };
+    case 'number':
+      return { type: 'number' };
+    case 'boolean':
+      return { type: 'boolean' };
+    case 'nullish':
+      return { type: 'nullish' };
+    case 'bigint':
+      return { type: 'bigint' };
+    case 'symbol':
+      return { type: 'symbol' };
+    case '_':
+      return { type: 'wildcard' };
+    default: {
+      throw new Error(
+        `unrecognized pattern: '${ht.patternIdentifier}.${expr.name}'`,
+      );
+    }
+  }
 }
 
 function transformToPatternObjExpr(
@@ -297,7 +450,7 @@ function transformToPatternObjExpr(
         `invalid pattern property value type: ${prop.value.type}`,
       );
     }
-    value[prop.key.name] = transformToPattern(ht, prop.value);
+    value[prop.key.name] = transformExprToPattern(ht, prop.value);
   }
 
   return {

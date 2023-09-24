@@ -8,6 +8,8 @@ import {
   PatternLiteral,
   PatternMatchBranch,
   PatternObject,
+  PatternSelect,
+  PatternSelectNamed,
 } from './hir';
 import traverse from '@babel/traverse';
 
@@ -19,19 +21,31 @@ export type HirCodegenOpts = {
 };
 export type HirCodegen = (
   | {
-    kind: 'iife';
-  }
+      kind: 'iife';
+    }
   | {
-    kind: 'block';
-    outVar: b.LVal;
-    outLabel: b.Identifier;
-    patternOriginalOutVar: b.LVal | undefined;
-    type: 'var-decl' | 'pattern-var-decl' | 'assignment';
-  }
+      kind: 'block';
+      outVar: b.LVal;
+      outLabel: b.Identifier;
+      patternOriginalOutVar: b.LVal | undefined;
+      type: 'var-decl' | 'pattern-var-decl' | 'assignment';
+    }
 ) & {
   // monotonically increasing id used for generating unique identifiers
   counter: number;
+  branchCtx: BranchCtx;
 } & HirCodegenOpts;
+
+type BranchCtx = {
+  selections?: BranchCtxSelections;
+};
+
+type BranchCtxSelections =
+  | { type: 'anonymous'; expr: b.Expression }
+  | {
+      type: 'named';
+      selections: Array<[pattern: PatternSelectNamed, expr: b.Expression]>;
+    };
 
 function uniqueIdent(n: number): b.Identifier {
   return b.identifier(`__patsy_temp_${n}`);
@@ -50,40 +64,43 @@ export function hirCodegenInit(
 
     if (b.isArrayPattern(path.parent.id)) {
       return {
+        ...opts,
         kind: 'block',
         outVar: uniqueIdent(0),
         outLabel: uniqueIdent(1),
         counter: 2,
         patternOriginalOutVar: outVar,
         type: 'pattern-var-decl',
-        ...opts,
+        branchCtx: {},
       };
     }
 
     return {
+      ...opts,
       kind: 'block',
       outVar,
       outLabel: uniqueIdent(0),
       counter: 1,
       patternOriginalOutVar: undefined,
       type: 'var-decl',
-      ...opts,
+      branchCtx: {},
     };
   }
 
   if (b.isAssignmentExpression(path.parent)) {
     return {
+      ...opts,
       kind: 'block',
       outVar: path.parent.left,
       outLabel: uniqueIdent(0),
       counter: 1,
       patternOriginalOutVar: undefined,
       type: 'assignment',
-      ...opts,
+      branchCtx: {},
     };
   }
 
-  return { kind: 'iife', counter: 0, ...opts };
+  return { ...opts, kind: 'iife', counter: 0, branchCtx: {} };
 }
 
 /**
@@ -206,6 +223,7 @@ function hirCodegenBranch(
   expr: Expr,
   branch: PatternMatchBranch,
 ): b.Statement {
+  hc.branchCtx = {};
   const patternChecks = branch.patterns.map((pat) =>
     hirCodegenPattern(hc, expr, pat),
   );
@@ -243,9 +261,19 @@ function hirCodegenPatternThen(
   }
 
   // Otherwise its a function referenced by an identifier or some other
-  // expression that resolves to a function
+  // expression that resolves to a function, so call it with the args:
+  // - if no branch selections => just the match expr
+  // - if selectoins => the selection / selection object, then the match expr
   return b.blockStatement([
-    ...hirCodegenOutput(hc, b.callExpression(then, [expr])),
+    ...hirCodegenOutput(
+      hc,
+      b.callExpression(
+        then,
+        hc.branchCtx.selections !== undefined
+          ? [hirCodegenConstructSelectionExpr(hc.branchCtx.selections), expr]
+          : [expr],
+      ),
+    ),
     // b.returnStatement(b.callExpression(then, [expr]))
   ]);
 }
@@ -268,6 +296,36 @@ function hirCodegenOutput(hc: HirCodegen, value: Expr): b.Statement[] {
   }
 }
 
+/**
+ * Returns an expression that represents the selection of the branch:
+ * - anonymous selection => the expression referencing the match expr
+ * - named selection => an object literal with keys being the names, and values being referencing the match expr
+ *
+ * Anonymous selection:
+ * ```typescript
+ * match(foo).with({ type: 'bar', name: P.select() }, (val) => console.log(val))
+ * ```
+ * The expression should be `foo.name`
+ *
+ *
+ * Named selection:
+ * ```typescript
+ * match(foo).with({ type: 'bar', name: P.select('name'), age: P.select('age') }, (val) => console.log(val))
+ * ```
+ * The expression should be `{ name: foo.name, age: foo.age }`
+ **/
+function hirCodegenConstructSelectionExpr(
+  selections: BranchCtxSelections,
+): b.Expression {
+  if (selections.type === 'anonymous') return selections.expr;
+
+  const properties = selections.selections.map(([pattern, expr]) =>
+    b.objectProperty(pattern.name, expr, true),
+  );
+
+  return b.objectExpression(properties);
+}
+
 function hirCodegenPatternThenFunction(
   hc: HirCodegen,
   expr: Expr,
@@ -275,12 +333,31 @@ function hirCodegenPatternThenFunction(
   body: b.BlockStatement | b.Expression,
 ): b.BlockStatement {
   const block: b.Statement[] = [];
-  // Bind the args, should only be one
-  if (args.length > 1) {
+  // Bind the args to the handler
+  if (args.length > 1 && hc.branchCtx.selections === undefined) {
     throw new Error('unimplemented more than one arg on result function');
   } else if (args.length === 1) {
     block.push(
-      b.variableDeclaration('let', [b.variableDeclarator(args[0]!, expr)]),
+      b.variableDeclaration('let', [
+        b.variableDeclarator(
+          args[0]!,
+          hc.branchCtx.selections === undefined
+            ? expr
+            : hirCodegenConstructSelectionExpr(hc.branchCtx.selections),
+        ),
+      ]),
+    );
+  } else if (args.length === 2 && hc.branchCtx.selections !== undefined) {
+    block.push(
+      // The first arg should be bound to the selection
+      b.variableDeclaration('let', [
+        b.variableDeclarator(
+          args[0]!,
+          hirCodegenConstructSelectionExpr(hc.branchCtx.selections),
+        ),
+      ]),
+      // the second arg is the matched expression
+      b.variableDeclaration('let', [b.variableDeclarator(args[1]!, expr)]),
     );
   }
 
@@ -303,7 +380,10 @@ function hirCodegenRewriteReturns(hc: HirCodegen, body: b.BlockStatement) {
   traverse(body, {
     noScope: true,
     ReturnStatement(path) {
-      const output = hirCodegenOutput(hc, path.node.argument || b.identifier('undefined'));
+      const output = hirCodegenOutput(
+        hc,
+        path.node.argument || b.identifier('undefined'),
+      );
       path.replaceWithMultiple(output);
     },
   });
@@ -324,11 +404,38 @@ function hirCodegenPattern(
     case 'array': {
       return hirCodegenPatternArray(hc, expr, pattern.value);
     }
+    case 'string':
+    case 'number':
+    case 'bigint':
+    case 'boolean': {
+      return hirCodegenPatternSimpleTypeof(hc, expr, pattern.type);
+    }
+    case 'nullish':
+    case 'symbol':
     case 'wildcard':
-    case 'matchfn': {
+    case '_array':
+    case 'set':
+    case 'map':
+    case 'when':
+    case 'not': {
       throw new Error(`unimplemented pattern: ${pattern.type}`);
     }
+    case 'select': {
+      return hirCodegenPatternSelect(hc, expr, pattern.value);
+    }
   }
+}
+
+function hirCodegenPatternSimpleTypeof(
+  hc: HirCodegen,
+  expr: b.Expression,
+  type: 'string' | 'number' | 'bigint' | 'boolean',
+): b.Expression {
+  return b.binaryExpression(
+    '===',
+    b.unaryExpression('typeof', expr, true),
+    b.stringLiteral(type),
+  );
 }
 
 function hirCodegenMemberExpr(
@@ -380,6 +487,37 @@ function hirCodegenPatternArray(
   return concatConditionals(conditionals);
 }
 
+function hirCodegenPatternSelect(
+  hc: HirCodegen,
+  expr: Expr,
+  select: PatternSelect,
+): b.Expression {
+  if (hc.branchCtx.selections !== undefined) {
+    if (hc.branchCtx.selections.type === 'anonymous') {
+      throw new Error(
+        'Cannot have more than one anonymous `P.select()` in a single pattern match branch',
+      );
+    }
+    if (select.type !== 'named')
+      throw new Error(
+        'Cannot mix anonymous and named `P.select()` in a single pattern match branch',
+      );
+
+    hc.branchCtx.selections.selections.push([select, expr]);
+  } else {
+    if (select.type === 'anonymous') {
+      hc.branchCtx.selections = { type: 'anonymous', expr };
+    } else {
+      hc.branchCtx.selections = { type: 'named', selections: [[select, expr]] };
+    }
+  }
+
+  if (select.subpattern !== undefined)
+    return hirCodegenPattern(hc, expr, select.subpattern);
+
+  return b.booleanLiteral(true);
+}
+
 function hirCodegenPatternObject(
   hc: HirCodegen,
   expr: Expr,
@@ -426,19 +564,19 @@ function patternLiteralToExpr(lit: PatternLiteral): b.Expression {
       return b.numericLiteral(lit.value);
     }
     case 'boolean': {
-      return b.identifier('undefined')
+      return b.identifier('undefined');
     }
     case 'bigint': {
-      return b.bigIntLiteral(lit.value)
+      return b.bigIntLiteral(lit.value);
     }
     case 'undefined': {
-      return b.identifier('undefined')
+      return b.identifier('undefined');
     }
     case 'null': {
-      return b.nullLiteral()
+      return b.nullLiteral();
     }
     case 'nan': {
-      return b.identifier('NaN')
+      return b.identifier('NaN');
     }
   }
 }
@@ -446,8 +584,13 @@ function patternLiteralToExpr(lit: PatternLiteral): b.Expression {
 /**
  * Turn an array of conditionals (expressions that return a boolean) into a single expression chained by multiple '&&'
  **/
-function concatConditionals(conds: Array<b.Expression>): b.Expression {
-  if (conds.length === 0) throw new Error('unreachable: conds array should be non-empty')
+function concatConditionals(conds_: Array<b.Expression>): b.Expression {
+  // `true` is redundant so we can get rid of it
+  const conds = conds_.filter(
+    (cond) => !(b.isBooleanLiteral(cond) && cond.value === true),
+  );
+  if (conds.length === 0)
+    throw new Error('unreachable: conds array should be non-empty');
   if (conds.length === 1) return conds[0]!;
 
   let i = conds.length - 1;

@@ -10,36 +10,51 @@ import {
 
 export type Opts = HirCodegenOpts;
 
+type State = {
+  matchIdentifier: string | undefined;
+  patternIdentifier: string | undefined;
+};
 const patsyPlugin = (opts: Opts): PluginObj => {
-  let state: { importName: string | undefined } = {
-    importName: undefined,
+  let state: State = {
+    matchIdentifier: undefined,
+    patternIdentifier: undefined,
   };
   let hirTransform: HirTransform | undefined = undefined;
   return {
     name: 'patsy',
     visitor: {
       Program(path) {
-        path.traverse<{ importName: string | undefined }>(
+        path.traverse<State>(
           {
             ImportDeclaration(path, state) {
               if (path.node.source.value != 'ts-pattern') return;
 
               for (const specifier of path.node.specifiers) {
+                if (!b.isImportSpecifier(specifier)) continue;
                 if (
-                  b.isImportSpecifier(specifier) &&
-                  specifier.imported.type === 'Identifier'
+                  specifier.imported.type === 'Identifier' &&
+                  specifier.imported.name === 'match'
                 ) {
-                  state.importName = specifier.local.name;
-                  return;
+                  state.matchIdentifier = specifier.local.name;
+                  continue;
+                }
+                if (
+                  specifier.imported.type === 'Identifier' &&
+                  (specifier.imported.name === 'Pattern' ||
+                    specifier.imported.name === 'P')
+                ) {
+                  state.patternIdentifier = specifier.local.name;
+                  continue;
                 }
               }
             },
           },
           state,
         );
-        if (state.importName !== undefined) {
+        if (state.matchIdentifier !== undefined) {
           hirTransform = {
-            importName: state.importName,
+            matchIdentifier: state.matchIdentifier,
+            patternIdentifier: state.patternIdentifier,
           };
         }
       },
