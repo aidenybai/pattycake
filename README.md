@@ -6,9 +6,9 @@ An optimizing compiler for [ts-pattern](https://github.com/gvergnaud/ts-pattern)
 
 `ts-pattern` is a great library that brings the ergonomics of pattern matching from languages like Rust and OCaml to Typescript, but at the cost of being orders of magnitude slower.
 
-`patsy` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by usually ~36-66x.
+`ts-pattycake` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by usually ~36-66x.
 
-In essence, `patsy` converts a `ts-pattern` `match()` expression like this:
+In essence, `ts-pattycake` converts a `ts-pattern` `match()` expression like this:
 
 ```typescript
 let html = match(result)
@@ -89,7 +89,7 @@ out: {
 
 ## Fallback / compatibility with `ts-pattern`
 
-If `patsy` is unable to optimize a `match()` expression, it will fallback to using `ts-pattern`. This is enabled right now because we don't support the full feature set of ts-pattern.
+If `ts-pattycake` is unable to optimize a `match()` expression, it will fallback to using `ts-pattern`. This is enabled right now because we don't support the full feature set of ts-pattern.
 
 ### Inlining handlers
 
@@ -107,11 +107,11 @@ Additionally, a `match()` with many branches means creating a lot of function ob
 
 The JIT-compiler and optimizer in JS engines can do inlining of functions, but in general with JIT you need to run your code several times or it to determine what to optimize.
 
-So when possible, `patsy` will try to inline function expression (anonymous functions / arrow functions) handlers directly into the code if it is small.
+So when possible, `ts-pattycake` will try to inline function expression (anonymous functions / arrow functions) handlers directly into the code if it is small.
 
 ### IIFEs
 
-When possible, `patsy` will try to generate a block of code (like in the example above). But there are times where this is not possible without breaking the semantics of source code.
+When possible, `ts-pattycake` will try to generate a block of code (like in the example above). But there are times where this is not possible without breaking the semantics of source code.
 
 ## Roadmap
 
