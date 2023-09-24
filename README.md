@@ -1,6 +1,8 @@
-# patsy
+# ts-pattycake
 
 Zero-runtime pattern matching for [`ts-pattern`](https://github.com/gvergnaud/ts-pattern).
+
+You get to have your cake (pattern matching), and eat it too.
 
 ## About
 

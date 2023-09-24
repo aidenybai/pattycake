@@ -85,10 +85,10 @@ export type HirTransform = {
   patternIdentifier: string | undefined;
 };
 
-export function hirFromCallExpr(
+export function callExpressionsFlat(
   ht: HirTransform,
   callExpr: b.CallExpression,
-): PatternMatch | undefined {
+): b.CallExpression[] | undefined {
   const depth = hirHasPatternMatchRoot(ht, callExpr);
   if (depth === 0) return undefined;
 
@@ -101,6 +101,16 @@ export function hirFromCallExpr(
     buf as unknown as Array<b.CallExpression>,
     depth - 1,
   );
+
+  return buf;
+}
+
+export function hirFromCallExpr(
+  ht: HirTransform,
+  callExpr: b.CallExpression,
+): PatternMatch | undefined {
+  const buf = callExpressionsFlat(ht, callExpr);
+  if (buf === undefined) return undefined;
 
   return hirFromCallExprImpl(ht, buf);
 }

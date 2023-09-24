@@ -6,6 +6,8 @@ import { declare } from '@babel/helper-plugin-utils';
 import { createUnplugin } from 'unplugin';
 import patsyPlugin, { Opts } from './patsy';
 
+export type Options = Opts;
+
 export const unplugin = createUnplugin((options: Opts) => {
   return {
     enforce: 'pre',

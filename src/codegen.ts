@@ -589,8 +589,7 @@ function concatConditionals(conds_: Array<b.Expression>): b.Expression {
   const conds = conds_.filter(
     (cond) => !(b.isBooleanLiteral(cond) && cond.value === true),
   );
-  if (conds.length === 0)
-    throw new Error('unreachable: conds array should be non-empty');
+  if (conds.length === 0) return b.booleanLiteral(true);
   if (conds.length === 1) return conds[0]!;
 
   let i = conds.length - 1;

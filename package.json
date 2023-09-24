@@ -1,5 +1,5 @@
 {
-  "name": "ts-pattern-compiler",
+  "name": "ts-pattycake",
   "version": "0.0.0",
   "description": "Zero-runtime pattern matching",
   "keywords": [
@@ -28,8 +28,8 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest --globals",
-    "bump": "pnpm run build && pnpx bumpp && npm publish"
+    "bump": "pnpm run build && pnpx bumpp && npm publish",
+    "test": "vitest --globals"
   },
   "prettier": "@vercel/style-guide/prettier",
   "dependencies": {

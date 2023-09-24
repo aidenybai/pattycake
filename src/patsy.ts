@@ -1,6 +1,6 @@
-import { PluginObj } from '@babel/core';
+import { NodePath, PluginObj } from '@babel/core';
 import * as b from '@babel/types';
-import { HirTransform, hirFromCallExpr } from './hir';
+import { HirTransform, callExpressionsFlat, hirFromCallExpr } from './hir';
 import {
   HirCodegen,
   HirCodegenOpts,
@@ -61,6 +61,8 @@ const patsyPlugin = (opts: Opts): PluginObj => {
       CallExpression(path) {
         if (hirTransform === undefined) return;
 
+        if (!terminatesMatchExpression(hirTransform, path)) return;
+
         try {
           const pat = hirFromCallExpr(hirTransform, path.node);
           if (pat === undefined) return;
@@ -117,5 +119,32 @@ const patsyPlugin = (opts: Opts): PluginObj => {
     },
   };
 };
+
+/**
+ * Determines if this nested tree of call expressions is a complete ts-pattern match expression
+ *
+ * This is done simply by looking at the last call expression, and checking if the callee is a function that
+ * terminates the match expression (.otherwise(), .run(), .exhaustive())
+ *
+ * Without this, the compiler will attempt to build the HIR and codegen it for each chained function on the match expression
+ **/
+function terminatesMatchExpression(
+  ht: HirTransform,
+  callExpr: NodePath<b.CallExpression>,
+): boolean {
+  const callExprs = callExpressionsFlat(ht, callExpr.node);
+  if (callExprs === undefined) return false;
+
+  const last = callExprs[callExprs.length - 1]!;
+  if (!b.isMemberExpression(last.callee)) return false;
+  if (!b.isIdentifier(last.callee.property)) return false;
+  switch (last.callee.property.name) {
+    case 'otherwise':
+    case 'run':
+    case 'exhaustive':
+      return true;
+  }
+  return false;
+}
 
 export default patsyPlugin;
