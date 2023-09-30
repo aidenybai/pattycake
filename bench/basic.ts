@@ -53,10 +53,6 @@ function pattycake(result: Result) {
   return html;
 }
 
-// const data = generateRandomData(100000)
-// const data = generateRandomData(50_000_000)
-// const data = generateRandomData(10_000_000)
-const data = generateRandomData(10000);
 const iterCount = 1000;
 
 console.log(
@@ -66,12 +62,12 @@ console.log(
 
 const [pattycakeIters, pattycakeTotal] = benchmark(
   (results) => results.map(pattycake),
-  data,
+  () => generateRandomData(100000),
   iterCount,
 );
 const [tspatIters, tspatTotal] = benchmark(
   (results) => results.map(tspattern),
-  data,
+  () => generateRandomData(100000),
   iterCount,
 );
 

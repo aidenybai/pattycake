@@ -45,18 +45,18 @@ export function generateRandomData(amount: number): Array<Result> {
 // Benchmark function
 export function benchmark(
   fn: (input: Result[]) => void,
-  data: Array<Result>,
+  data: () => Array<Result>,
   iterAmount: number,
 ): [iterations: number[], elapsed: number] {
   const iterations: number[] = [];
   const totalStart = performance.now();
 
-  let start = performance.now();
   for (let i = 0; i < iterAmount; i++) {
-    fn(data);
+    const d = data();
+    const start = performance.now();
+    fn(d);
     const end = performance.now();
     iterations.push(end - start);
-    start = end;
   }
 
   return [iterations, performance.now() - totalStart];
