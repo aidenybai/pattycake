@@ -1,6 +1,8 @@
 import chalk from 'chalk';
+import { generateHeapSnapshot } from 'bun';
 import { match, P } from 'ts-pattern';
 import type { Result } from './util';
+import { heapStats } from 'bun:jsc';
 import { benchmark, generateRandomData, printBenchmarkStats } from './util';
 
 function tspattern(result: Result) {
@@ -49,10 +51,6 @@ function pattycake(result: Result) {
   }
 }
 
-// const data = generateRandomData(100000)
-// const data = generateRandomData(50_000_000)
-// const data = generateRandomData(10_000_000)
-const data = generateRandomData(10000);
 const iterCount = 1000;
 
 console.log(
@@ -62,12 +60,12 @@ console.log(
 
 const [pattycakeIters, pattycakeTotal] = benchmark(
   (results) => results.map(pattycake),
-  data,
+  () => generateRandomData(10000),
   iterCount,
 );
 const [tspatIters, tspatTotal] = benchmark(
   (results) => results.map(tspattern),
-  data,
+  () => generateRandomData(10000),
   iterCount,
 );
 
