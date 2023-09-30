@@ -1,6 +1,8 @@
+> ⚠️ Note: this is highly experimental software. Here be dragons 🐉
+
 # 🎂 pattycake
 
-**Zero-runtime pattern matching. (~36-66x faster 🔥)**
+**Zero-runtime pattern matching. (~10-12x faster 🔥)**
 
 Pattycake is an optimizing compiler for [ts-pattern](https://github.com/gvergnaud/ts-pattern) that lets you have your cake (expressive pattern matching), and eat it too (zero runtime overhead).
 
