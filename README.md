@@ -11,7 +11,7 @@ npm install pattycake
 ```
 
 <details>
-  <summary><h3>Next.js</h3></summary>
+  <summary>Next.js</summary>
 
 ```js
 // next.config.js
@@ -25,7 +25,7 @@ module.exports = pattycake.next({
 </details>
 
 <details>
-  <summary><h3>Vite</h3></summary>
+  <summary>Vite</summary>
 
 ```js
 // vite.config.js
@@ -40,7 +40,7 @@ export default defineConfig({
 </details>
 
 <details>
-  <summary><h3>Create React App</h3></summary>
+  <summary>Create React App</summary>
 
 ```js
 const pattycake = require('pattycake');
@@ -55,7 +55,7 @@ module.exports = {
 </details>
 
 <details>
-  <summary><h3>Webpack</h3></summary>
+  <summary>Webpack</summary>
 
 ```js
 const pattycake = require('pattycake');
