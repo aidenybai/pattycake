@@ -1,12 +1,25 @@
 {
   "name": "pattycake",
-  "version": "4.0.0",
+  "version": "0.0.0",
   "description": "Zero-runtime pattern matching",
   "keywords": [
-    "react",
-    "reaict",
-    "automatic"
+    "pattern",
+    "matching",
+    "pattern-matching",
+    "typescript",
+    "match-with",
+    "match",
+    "switch",
+    "adt"
   ],
+  "homepage": "https://github.com/aidenybai/pattycake#readme",
+  "bugs": {
+    "url": "https://github.com/aidenybai/pattycake/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/aidenybai/pattycake.git"
+  },
   "funding": "https://github.com/sponsors/aidenybai",
   "license": "MIT",
   "author": "Zack Radisic, Aiden Bai",

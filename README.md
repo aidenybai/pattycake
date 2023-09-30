@@ -1,6 +1,71 @@
-# pattycake
+# 🎂 pattycake
 
-An optimizing compiler for [ts-pattern](https://github.com/gvergnaud/ts-pattern) that lets you have your cake (expressive pattern matching), and eat it too (zero runtime overhead).
+**Zero-runtime pattern matching. (~36-66x faster 🔥)**
+
+Pattycake is an optimizing compiler for [ts-pattern](https://github.com/gvergnaud/ts-pattern) that lets you have your cake (expressive pattern matching), and eat it too (zero runtime overhead).
+
+## Install
+
+```bash
+npm install pattycake
+```
+
+<details>
+  <summary><h3>Next.js</h3></summary>
+
+```js
+// next.config.js
+const pattycake = require('pattycake');
+
+module.exports = pattycake.next({
+  // your next.js config
+});
+```
+
+</details>
+
+<details>
+  <summary><h3>Vite</h3></summary>
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite';
+import pattycake from 'pattycake';
+
+export default defineConfig({
+  plugins: [pattycake.vite()],
+});
+```
+
+</details>
+
+<details>
+  <summary><h3>Create React App</h3></summary>
+
+```js
+const pattycake = require('pattycake');
+
+module.exports = {
+  webpack: {
+    plugins: { add: [pattycake.webpack()] },
+  },
+};
+```
+
+</details>
+
+<details>
+  <summary><h3>Webpack</h3></summary>
+
+```js
+const pattycake = require('pattycake');
+
+module.exports = {
+  plugins: [pattycake.webpack()],
+};
+```
+
+</details>
 
 ## About
 
