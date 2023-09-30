@@ -1,6 +1,6 @@
 {
   "name": "pattycake",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Zero-runtime pattern matching",
   "keywords": [
     "pattern",
