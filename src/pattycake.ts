@@ -14,14 +14,14 @@ type State = {
   matchIdentifier: string | undefined;
   patternIdentifier: string | undefined;
 };
-const patsyPlugin = (opts: Opts): PluginObj => {
+const pattycakePlugin = (opts: Opts): PluginObj => {
   let state: State = {
     matchIdentifier: undefined,
     patternIdentifier: undefined,
   };
   let hirTransform: HirTransform | undefined = undefined;
   return {
-    name: 'patsy',
+    name: 'pattycake',
     visitor: {
       Program(path) {
         path.traverse<State>(
@@ -32,14 +32,14 @@ const patsyPlugin = (opts: Opts): PluginObj => {
               for (const specifier of path.node.specifiers) {
                 if (!b.isImportSpecifier(specifier)) continue;
                 if (
-                  specifier.imported.type === 'Identifier' &&
+                  b.isIdentifier(specifier.imported) &&
                   specifier.imported.name === 'match'
                 ) {
                   state.matchIdentifier = specifier.local.name;
                   continue;
                 }
                 if (
-                  specifier.imported.type === 'Identifier' &&
+                  b.isIdentifier(specifier.imported) &&
                   (specifier.imported.name === 'Pattern' ||
                     specifier.imported.name === 'P')
                 ) {
@@ -147,4 +147,4 @@ function terminatesMatchExpression(
   return false;
 }
 
-export default patsyPlugin;
+export default pattycakePlugin;

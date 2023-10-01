@@ -234,9 +234,9 @@ function hirHasPatternMatchRootImpl(
   return 0;
 }
 
-function isPatternMatchExpr(val: b.Node | null | undefined): val is Expr {
-  return b.isExpression(val) || b.isSpreadElement(val);
-}
+// function isPatternMatchExpr(val: b.Node | null | undefined): val is Expr {
+//   return b.isExpression(val) || b.isSpreadElement(val);
+// }
 
 /**
  * See list of patterns here: https://github.com/gvergnaud/ts-pattern/tree/main#patterns

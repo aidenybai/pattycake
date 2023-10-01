@@ -4,14 +4,14 @@ import pluginSyntaxJsx from '@babel/plugin-syntax-jsx';
 import pluginSyntaxTypescript from '@babel/plugin-syntax-typescript';
 import { declare } from '@babel/helper-plugin-utils';
 import { createUnplugin } from 'unplugin';
-import patsyPlugin, { Opts } from './patsy';
+import pattycakePlugin, { Opts } from './pattycake';
 
 export type Options = Opts;
 
 export const unplugin = createUnplugin((options: Opts) => {
   return {
     enforce: 'pre',
-    name: 'ts-pattern-compiler',
+    name: 'pattycake',
     transformInclude(id: string) {
       return /\.[jt]s[x]?$/.test(id);
     },
@@ -38,5 +38,5 @@ export const unplugin = createUnplugin((options: Opts) => {
 export const babelPlugin = declare((api, options: Opts) => {
   api.assertVersion(7);
 
-  return patsyPlugin(options);
+  return pattycakePlugin(options);
 });

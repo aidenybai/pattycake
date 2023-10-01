@@ -73,7 +73,7 @@ module.exports = {
 
 `ts-pattern` is a great library that brings the ergonomics of pattern matching from languages like Rust and OCaml to Typescript, but at the cost of being orders of magnitude slower.
 
-`pattycake` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by usually ~36-66x.
+`pattycake` compiles ts-pattern's `match()` expressions into an optimized chain of if statements to completely eliminate that cost. In our initial benchmarks, it outperforms `ts-pattern` by usually ~10-12x.
 
 In essence, `pattycake` converts a `ts-pattern` `match()` expression like this:
 
