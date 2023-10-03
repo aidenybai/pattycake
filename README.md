@@ -164,8 +164,8 @@ One performance problem of `ts-pattern`'s are handler functions:
 
 ```typescript
 match(foo)
-  .with({ foo: 'bar', () => /* this is a handler function */)
-  .with({ foo: 'baz', () => /* another one */)
+  .with({ foo: 'bar' }, () => /* this is a handler function */)
+  .with({ foo: 'baz' }, () => /* another one */)
 ```
 
 Function calls usually have an overhead, and a lot of the time these handlers are small little functions (e.g. `(result) => result + 1`) which can be much faster if just directly inlined in the code.
