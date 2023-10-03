@@ -13,12 +13,12 @@ export const unplugin = createUnplugin((options: Opts) => {
     enforce: 'pre',
     name: 'pattycake',
     transformInclude(id: string) {
-      return /\.[jt]s[x]?$/.test(id);
+      return /\.[jt]sx?$/.test(id);
     },
     async transform(code: string, id: string) {
       const plugins: PluginItem[] = [[pluginSyntaxJsx]];
 
-      const isTypescript = /\.ts[x]?$/.test(id);
+      const isTypescript = /\.tsx?$/.test(id);
       if (isTypescript) {
         plugins.push([
           pluginSyntaxTypescript,
