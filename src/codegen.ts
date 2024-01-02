@@ -18,6 +18,7 @@ export type HirCodegenOpts = {
    * For some reason ts-pattern allows you to pattern match on arbitrary types that are unrelated to the expression being matched upon. As a result, optional chaining `foo?.bar?.baz` is necessary to avoid `property of undefined` errors. This incurs an additional runtime overhead, but you can disable it here.
    * */
   disableOptionalChaining: boolean;
+  mute?: boolean
 };
 export type HirCodegen = (
   | {
