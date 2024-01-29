@@ -113,7 +113,9 @@ const pattycakePlugin = (opts: Opts): PluginObj => {
             }
           }
         } catch (err) {
-          console.error(err);
+          if (!opts.mute) {
+            console.error(err);
+          }
         }
       },
     },
